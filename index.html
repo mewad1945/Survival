@@ -4,70 +4,70 @@
     <meta charset="UTF-8">
     <title>Z-Survival: Industrial Overlord</title>
     <style>
-        :root { --neon: #00ff41; --bg: #0a0a0b; }
+        :root { --neon: #00ff41; --bg: #0b0c10; }
         body { margin: 0; background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; overflow: hidden; }
-        canvas { display: block; filter: saturate(1.2); }
+        canvas { display: block; }
 
         /* HUD */
-        #ui-top { position: absolute; top: 20px; left: 20px; pointer-events: none; }
-        .stat-bar { width: 200px; height: 10px; background: #222; border: 1px solid var(--neon); margin-bottom: 5px; }
-        #hp-fill { height: 100%; background: #ff3131; width: 100%; transition: 0.3s; }
-        #food-fill { height: 100%; background: #ffb131; width: 100%; transition: 0.3s; }
-
-        /* Inventory (E) */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #stats { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.7); padding: 15px; border: 2px solid var(--neon); border-radius: 8px; }
+        
+        /* Inventory (E) - Nu med z-index för att garanterat synas */
         #inventory-screen {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 700px; height: 500px; background: rgba(0,10,0,0.95);
-            border: 3px solid var(--neon); border-radius: 15px;
-            display: none; grid-template-columns: 1fr 1fr; padding: 20px; gap: 20px;
-            box-shadow: 0 0 50px rgba(0,255,0,0.3);
+            width: 80%; height: 70%; background: rgba(5, 15, 5, 0.95);
+            border: 4px solid var(--neon); border-radius: 20px;
+            display: none; grid-template-columns: 1fr 1fr; padding: 30px; gap: 30px;
+            pointer-events: all; z-index: 100;
+            box-shadow: 0 0 100px rgba(0,255,0,0.4);
         }
-        .inv-column { border: 1px solid #333; padding: 15px; overflow-y: auto; }
-        .craft-card { background: #001a00; border: 1px solid #0f0; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-        button { background: var(--neon); color: black; border: none; padding: 5px 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
-        button:disabled { background: #222; color: #555; }
-
-        /* Hotbar */
-        #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; }
-        .slot { width: 50px; height: 50px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #111; position: relative; }
-        .slot.active { border-color: var(--neon); transform: scale(1.1); background: #020; }
+        .inv-col { border: 1px solid #0f0; padding: 20px; overflow-y: auto; background: rgba(0,0,0,0.5); }
+        .craft-item { background: #002200; border: 1px solid var(--neon); padding: 15px; margin-bottom: 10px; border-radius: 8px; }
         
-        #msg { position: absolute; bottom: 100px; width: 100%; text-align: center; color: white; font-weight: bold; font-size: 20px; pointer-events: none; }
+        button { background: var(--neon); color: black; border: none; padding: 10px; cursor: pointer; font-weight: bold; width: 100%; border-radius: 5px; }
+        button:disabled { background: #222; color: #555; cursor: not-allowed; }
+
+        #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; pointer-events: all; }
+        .slot { width: 60px; height: 60px; border: 2px solid #333; background: #111; display: flex; align-items: center; justify-content: center; font-size: 25px; transition: 0.2s; }
+        .slot.active { border-color: var(--neon); transform: scale(1.2); background: #030; box-shadow: 0 0 20px var(--neon); }
     </style>
 </head>
 <body>
 
-<div id="ui-top">
-    HP: <div class="stat-bar"><div id="hp-fill"></div></div>
-    FOOD: <div class="stat-bar"><div id="food-fill"></div></div>
-    <div id="resources" style="margin-top:10px; font-size:14px;">
+<div id="ui-layer">
+    <div id="stats">
+        <div style="color:#ff3131">❤️ HP: <span id="v-hp">100</span></div>
+        <div style="color:#ffb131">🍗 MAT: <span id="v-food">100</span></div>
+        <hr style="border-color:#111">
         🪵:<span id="v-wood">0</span> 🪨:<span id="v-stone">0</span> ⛓️:<span id="v-iron">0</span> ⚙️:<span id="v-parts">0</span>
     </div>
-</div>
 
-<div id="inventory-screen">
-    <div class="inv-column">
-        <h3>🎒 RYGGSÄCK</h3>
-        <div id="inv-list"></div>
-        <hr>
-        <b>VAPEN-DELAR:</b><br>
-        Pipa: <span id="v-barrel">0</span> | Mag: <span id="v-mag">0</span> | Muzzle: <span id="v-muzzle">0</span>
+    <div id="inventory-screen">
+        <div class="inv-col">
+            <h2 style="text-align:center">🎒 DIN RYGGSÄCK</h2>
+            <div id="items-list">
+                <p>Pipa: <span id="v-barrel">0</span></p>
+                <p>Magasin: <span id="v-mag">0</span></p>
+                <p>Muzzle: <span id="v-muzzle">0</span></p>
+                <p>Frön: <span id="v-seeds">5</span></p>
+                <p>Kulspruta: <span id="v-hasMG">NEJ</span></p>
+                <p>Flygplan: <span id="v-hasPlane">NEJ</span></p>
+            </div>
+        </div>
+        <div class="inv-col">
+            <h2 style="text-align:center">🛠️ CRAFTING</h2>
+            <div id="craft-list"></div>
+        </div>
     </div>
-    <div class="inv-column">
-        <h3>🛠️ CRAFTING</h3>
-        <div id="craft-list"></div>
+
+    <div id="hotbar">
+        <div class="slot active" id="s1" title="Hand">✋</div>
+        <div class="slot" id="s2" title="Pickaxe">⛏️</div>
+        <div class="slot" id="s3" title="Spade">🥄</div>
+        <div class="slot" id="s4" title="Vapen">🔫</div>
+        <div class="slot" id="s5" title="Fordon">✈️</div>
     </div>
 </div>
-
-<div id="hotbar">
-    <div class="slot active" id="s1">✋</div>
-    <div class="slot" id="s2">⛏️</div>
-    <div class="slot" id="s3">🥄</div>
-    <div class="slot" id="s4">🔫</div>
-    <div class="slot" id="s5">✈️</div>
-</div>
-
-<div id="msg"></div>
 
 <canvas id="gameCanvas"></canvas>
 
@@ -76,46 +76,44 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-// --- SPEL-DATA ---
-let p = { x: 0, y: 0, hp: 100, food: 100, wood: 0, stone: 0, iron: 0, parts: 0, barrel: 0, mag: 0, muzzle: 0, ammo: 10, slot: 1, zoom: 1 };
+// --- STATE ---
+let p = { x: 0, y: 0, hp: 100, food: 100, wood: 0, stone: 0, iron: 0, parts: 0, barrel: 0, mag: 0, muzzle: 0, ammo: 10, seeds: 5, slot: 1, zoom: 1 };
 let invOpen = false;
-let world = [], bullets = [], keys = {};
-let unlocks = { pickaxe: false, shovel: false, smith: false, mg: false, plane: false };
+let world = [], bullets = [], patches = [], keys = {};
+let unlocks = { pickaxe: false, shovel: false, mg: false, plane: false };
 
 function init() {
-    for(let i=0; i<60; i++) spawn('tree', (Math.random()-0.5)*4000, (Math.random()-0.5)*4000);
-    for(let i=0; i<40; i++) spawn('stone', (Math.random()-0.5)*4000, (Math.random()-0.5)*4000);
-    for(let i=0; i<30; i++) spawn('scrap', (Math.random()-0.5)*4000, (Math.random()-0.5)*4000);
+    for(let i=0; i<50; i++) spawn('tree', (Math.random()-0.5)*4000, (Math.random()-0.5)*4000);
+    for(let i=0; i<30; i++) spawn('stone', (Math.random()-0.5)*4000, (Math.random()-0.5)*4000);
+    for(let i=0; i<20; i++) spawn('scrap', (Math.random()-0.5)*4000, (Math.random()-0.5)*4000);
 }
 
-function spawn(type, x, y) { world.push({ type, x, y, hp: 10, timer: 0, shake: 0 }); }
+function spawn(type, x, y) { world.push({ type, x, y, hp: 100, timer: 0, shake: 0, ready: false }); }
 
-// --- CRAFTING LOGIK ---
+// --- CRAFTING RECIPES ---
 const recipes = [
-    { id: 'pickaxe', name: 'Trä-Pickaxe', cost: { wood: 10 }, unlock: 'wood', icon: '⛏️' },
-    { id: 'shovel', name: 'Spade', cost: { wood: 10 }, unlock: 'wood', icon: '🥄' },
-    { id: 'barrel', name: 'Vapen-Pipa', cost: { iron: 15 }, unlock: 'iron', icon: '🛠️' },
-    { id: 'mag', name: 'Magasin', cost: { iron: 10 }, unlock: 'iron', icon: '🛠️' },
-    { id: 'muzzle', name: 'Muzzle', cost: { iron: 10 }, unlock: 'iron', icon: '🛠️' },
-    { id: 'mg', name: 'Kulspruta (AK)', cost: { parts: 5 }, needsParts: true, icon: '🔫' },
-    { id: 'plane', name: 'Militärflyg', cost: { iron: 50, parts: 15 }, unlock: 'parts', icon: '✈️' }
+    { id: 'pickaxe', name: 'Pickaxe', cost: { wood: 10 }, icon: '⛏️' },
+    { id: 'shovel', name: 'Spade', cost: { wood: 10 }, icon: '🥄' },
+    { id: 'barrel', name: 'Pipa', cost: { iron: 15 }, icon: '⛓️' },
+    { id: 'mag', name: 'Magasin', cost: { iron: 10 }, icon: '⛓️' },
+    { id: 'muzzle', name: 'Muzzle', cost: { iron: 10 }, icon: '⛓️' },
+    { id: 'mg', name: 'Kulspruta', cost: { barrel: 1, mag: 1, muzzle: 1 }, icon: '🔫' },
+    { id: 'plane', name: 'Flygplan', cost: { iron: 50, parts: 20 }, icon: '✈️' }
 ];
 
 function craft(id) {
     const r = recipes.find(x => x.id === id);
-    if (r.id === 'mg') {
-        if(p.barrel >= 1 && p.mag >= 1 && p.muzzle >= 1) {
-            p.barrel--; p.mag--; p.muzzle--; unlocks.mg = true; showMsg("KULSPRUTA KLAR!");
-        }
-    } else {
-        let canAfford = true;
-        for(let res in r.cost) if(p[res] < r.cost[res]) canAfford = false;
-        if(canAfford) {
-            for(let res in r.cost) p[res] -= r.cost[res];
-            if(id === 'barrel' || id === 'mag' || id === 'muzzle') p[id]++;
-            else unlocks[id] = true;
-            showMsg(r.name + " Skapad!");
-        }
+    let canAfford = true;
+    for(let res in r.cost) {
+        if (res === 'barrel' || res === 'mag' || res === 'muzzle') {
+            if(p[res] < r.cost[res]) canAfford = false;
+        } else if(p[res] < r.cost[res]) canAfford = false;
+    }
+
+    if(canAfford) {
+        for(let res in r.cost) p[res] -= r.cost[res];
+        if(['barrel','mag','muzzle'].includes(id)) p[id]++;
+        else unlocks[id] = true;
     }
     updateUI();
     renderCrafting();
@@ -124,7 +122,11 @@ function craft(id) {
 // --- INPUTS ---
 window.onkeydown = e => {
     keys[e.key.toLowerCase()] = true;
-    if(e.key.toLowerCase() === 'e') { invOpen = !invOpen; document.getElementById('inventory-screen').style.display = invOpen ? 'grid' : 'none'; renderCrafting(); }
+    if(e.key.toLowerCase() === 'e') {
+        invOpen = !invOpen;
+        document.getElementById('inventory-screen').style.display = invOpen ? 'grid' : 'none';
+        if(invOpen) renderCrafting();
+    }
     if(['1','2','3','4','5'].includes(e.key)) {
         p.slot = parseInt(e.key);
         document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
@@ -135,24 +137,33 @@ window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 
 window.onmousedown = () => {
     if(invOpen) return;
+    // Skjut (4)
     if(p.slot === 4 && unlocks.mg && p.ammo > 0) {
         p.ammo--;
         let a = Math.atan2(mouseY - canvas.height/2, mouseX - canvas.width/2);
-        bullets.push({ x: p.x, y: p.y, a, s: 25 });
+        bullets.push({ x: p.x, y: p.y, a, s: 20 });
+    }
+    // Gräv/Plantera (3)
+    if(p.slot === 3 && unlocks.shovel) {
+        let isOnPatch = patches.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 40);
+        if(!isOnPatch) {
+            patches.push({ x: p.x, y: p.y });
+        } else if(p.seeds > 0) {
+            p.seeds--;
+            spawn('farm', p.x, p.y);
+        }
     }
 };
 let mouseX=0, mouseY=0;
 window.onmousemove = e => { mouseX = e.clientX; mouseY = e.clientY; };
 
-// --- LOOP ---
+// --- UPDATE ---
 function update() {
     if(invOpen) return;
-    
-    // Rörelse & Zoom vid flyg
-    let speed = 5;
-    p.zoom = 1;
-    if(p.slot === 5 && unlocks.plane) { speed = 15; p.zoom = 0.4; }
-    
+
+    let speed = (p.slot === 5 && unlocks.plane) ? 15 : 5;
+    p.zoom = (p.slot === 5 && unlocks.plane) ? 0.4 : 1;
+
     if(keys.w) p.y -= speed; if(keys.s) p.y += speed;
     if(keys.a) p.x -= speed; if(keys.d) p.x += speed;
 
@@ -163,9 +174,13 @@ function update() {
         let d = Math.hypot(p.x - obj.x, p.y - obj.y);
         if(d < 70 && keys[' ']) {
             obj.shake = 10;
-            if(obj.type === 'tree' && p.slot === 1) { obj.hp -= 0.1; if(obj.hp<=0){p.wood+=5; world.splice(i,1);} }
-            if(obj.type === 'stone' && p.slot === 2 && unlocks.pickaxe) { obj.hp -= 0.1; if(obj.hp<=0){p.stone+=5; world.splice(i,1);} }
+            if(obj.type === 'tree' && p.slot === 1) { obj.hp -= 1; if(obj.hp<=0){p.wood+=5; world.splice(i,1);} }
+            if(obj.type === 'stone' && p.slot === 2 && unlocks.pickaxe) { obj.hp -= 1; if(obj.hp<=0){p.stone+=5; world.splice(i,1);} }
             if(obj.type === 'scrap') { p.parts += 2; p.iron += 5; world.splice(i,1); }
+            if(obj.type === 'farm' && obj.ready) { p.food = 100; p.seeds += 2; world.splice(i,1); }
+        }
+        if(obj.type === 'farm') {
+            obj.timer++; if(obj.timer > 600) obj.ready = true;
         }
         if(obj.shake > 0) obj.shake *= 0.8;
     });
@@ -178,20 +193,22 @@ function renderCrafting() {
     let html = '';
     recipes.forEach(r => {
         let can = true;
-        if(r.cost) for(let res in r.cost) if(p[res] < r.cost[res]) can = false;
-        if(r.id === 'mg' && (p.barrel < 1 || p.mag < 1 || p.muzzle < 1)) can = false;
-        
-        html += `<div class="craft-card">
+        for(let res in r.cost) {
+            if (['barrel','mag','muzzle'].includes(res)) { if(p[res] < r.cost[res]) can = false; }
+            else if(p[res] < r.cost[res]) can = false;
+        }
+        html += `<div class="craft-item">
             <b>${r.icon} ${r.name}</b><br>
-            <button onclick="craft('${r.id}')" ${!can ? 'disabled' : ''}>BYGG</button>
+            <small>${JSON.stringify(r.cost).replace(/[{}"]/g, '')}</small>
+            <button onclick="craft('${r.id}')" ${!can ? 'disabled' : ''}>CRAFT</button>
         </div>`;
     });
     document.getElementById('craft-list').innerHTML = html;
 }
 
 function updateUI() {
-    document.getElementById('hp-fill').style.width = p.hp + "%";
-    document.getElementById('food-fill').style.width = p.food + "%";
+    document.getElementById('v-hp').innerText = Math.floor(p.hp);
+    document.getElementById('v-food').innerText = Math.floor(p.food);
     document.getElementById('v-wood').innerText = p.wood;
     document.getElementById('v-stone').innerText = p.stone;
     document.getElementById('v-iron').innerText = p.iron;
@@ -199,47 +216,50 @@ function updateUI() {
     document.getElementById('v-barrel').innerText = p.barrel;
     document.getElementById('v-mag').innerText = p.mag;
     document.getElementById('v-muzzle').innerText = p.muzzle;
+    document.getElementById('v-seeds').innerText = p.seeds;
+    document.getElementById('v-hasMG').innerText = unlocks.mg ? "JA" : "NEJ";
+    document.getElementById('v-hasPlane').innerText = unlocks.plane ? "JA" : "NEJ";
 }
 
-function showMsg(t) { document.getElementById('msg').innerText = t; setTimeout(()=>document.getElementById('msg').innerText="", 3000); }
-
+// --- DRAW ---
 function draw() {
-    ctx.fillStyle = '#050a05'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#0a0b10'; ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.save();
     ctx.translate(canvas.width/2, canvas.height/2);
     ctx.scale(p.zoom, p.zoom);
     ctx.translate(-p.x, -p.y);
 
+    // Rita grävda plättar
+    ctx.fillStyle = '#3d2b1f';
+    patches.forEach(pt => ctx.fillRect(pt.x-30, pt.y-30, 60, 60));
+
+    // Rita världen
     world.forEach(obj => {
         ctx.save();
-        ctx.translate(obj.x + Math.random()*obj.shake, obj.y);
+        ctx.translate(obj.x + Math.sin(Date.now()*0.1)*obj.shake, obj.y);
         if(obj.type === 'tree') {
-            ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-5, 0, 10, 25);
-            ctx.fillStyle = '#008000'; ctx.beginPath(); ctx.arc(0, -15, 25, 0, 7); ctx.fill();
-            ctx.fillStyle = '#006400'; ctx.beginPath(); ctx.arc(10, -25, 15, 0, 7); ctx.fill();
+            ctx.fillStyle = '#2d1b0f'; ctx.fillRect(-5, 0, 10, 30);
+            ctx.fillStyle = '#1a5a1a'; ctx.beginPath(); ctx.arc(0, -20, 30, 0, 7); ctx.fill();
         } else if(obj.type === 'stone') {
-            ctx.fillStyle = '#555'; ctx.beginPath(); ctx.moveTo(-20,10); ctx.lineTo(-10,-15); ctx.lineTo(20,10); ctx.fill();
+            ctx.fillStyle = '#444'; ctx.beginPath(); ctx.moveTo(-20,10); ctx.lineTo(0,-20); ctx.lineTo(20,10); ctx.fill();
         } else if(obj.type === 'scrap') {
-            ctx.fillStyle = '#ff00ff'; ctx.fillRect(-10,-10,20,20);
+            ctx.fillStyle = '#8e44ad'; ctx.fillRect(-15,-15,30,30);
+        } else if(obj.type === 'farm') {
+            ctx.fillStyle = obj.ready ? '#f1c40f' : '#27ae60'; ctx.fillRect(-10, -20, 20, 40);
         }
         ctx.restore();
     });
 
-    // Spelare / Fordon
-    ctx.fillStyle = (p.slot === 5 && unlocks.plane) ? '#fff' : '#0f0';
+    // Spelare / Flygplan
     if(p.slot === 5 && unlocks.plane) {
-        // Flygplans-modell
-        ctx.fillRect(p.x-40, p.y-5, 80, 10);
-        ctx.fillRect(p.x-5, p.y-30, 10, 60);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(p.x-50, p.y-5, 100, 10); ctx.fillRect(p.x-5, p.y-40, 10, 80);
     } else {
-        ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, 7); ctx.fill();
-        // Sikte
-        let a = Math.atan2(mouseY - canvas.height/2, mouseX - canvas.width/2);
-        ctx.strokeStyle = '#0f0'; ctx.beginPath(); ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x+Math.cos(a)*40, p.y+Math.sin(a)*40); ctx.stroke();
+        ctx.shadowBlur = 15; ctx.shadowColor = '#0f0'; ctx.fillStyle = '#0f0';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
     }
 
-    ctx.fillStyle = 'white'; bullets.forEach(b => ctx.fillRect(b.x, b.y, 5, 5));
+    ctx.fillStyle = 'white'; bullets.forEach(b => ctx.fillRect(b.x, b.y, 6, 6));
     ctx.restore();
     update();
     requestAnimationFrame(draw);
