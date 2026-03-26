@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Z-Survival: Industrial Age</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; color: #0f0; font-family: 'Courier New', monospace; overflow: hidden; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 15px; border: 1px solid #0f0; pointer-events: none; width: 250px; }
+        #craft-panel { position: absolute; right: 10px; top: 10px; background: rgba(0,0,0,0.9); padding: 15px; border: 2px solid #0f0; width: 260px; max-height: 90vh; overflow-y: auto; }
+        .btn { width: 100%; margin: 4px 0; padding: 6px; background: #030; color: #0f0; border: 1px solid #0f0; cursor: pointer; font-size: 12px; text-align: left; }
+        .btn:hover:not(:disabled) { background: #0f0; color: #000; }
+        .btn:disabled { color: #444; border-color: #444; cursor: not-allowed; }
+        .category { color: yellow; font-weight: bold; margin-top: 10px; border-bottom: 1px solid #444; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div style="color:red; font-weight:bold;">❤️ HP: <span id="hp">100</span> | 🍗 MAT: <span id="food">100</span></div>
+    <hr>
+    🪵 TRÄ: <span id="res-wood">0</span><br>
+    🪨 STEN: <span id="res-stone">0</span><br>
+    🔩 SKRUV: <span id="res-screw">0</span><br>
+    🔋 BATT: <span id="res-batt">0</span><br>
+    ⛓️ JÄRN: <span id="res-iron">0</span><br>
+    🔫 AMMO: <span id="res-ammo">10</span>
+</div>
+
+<div id="craft-panel">
+    <div class="category">VERKTYG</div>
+    <button class="btn" id="btn-pick" onclick="craft('pickaxe')">TRÄ-PICKAXE (10 Trä)</button>
+    
+    <div class="category">BYGGNADER</div>
+    <button class="btn" onclick="craft('smith')">SMITHING TABLE (10 Trä, 5 Sten)</button>
+    <button class="btn" onclick="craft('drill')">BORR (10 Sten, 5 Skruv, 2 Batt)</button>
+    <button class="btn" onclick="craft('farm')">FARM (5 Trä, 2 Seeds)</button>
+    
+    <div id="smith-ui" style="display:none">
+        <div class="category">VAPEN-FABRIK</div>
+        <button class="btn" onclick="craft('barrel')">PIPA (15 Järn)</button>
+        <button class="btn" onclick="craft('mag')">MAGASIN (10 Järn)</button>
+        <button class="btn" onclick="craft('ak47')">BYGG AK-47 (Pipa + Mag)</button>
+    </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// --- STATE ---
+let p = { x: 1500, y: 1500, hp: 100, food: 100, wood: 0, stone: 0, screw: 0, batt: 0, iron: 0, ammo: 10, hasPick: false, hasSmith: false, barrel: 0, mag: 0 };
+let objects = []; // Träd, sten, skrot, byggnader
+let bullets = [];
+let keys = {};
+
+// --- INITIERA MAPPEN ---
+function spawnInitial() {
+    for(let i=0; i<80; i++) spawn('tree', Math.random()*3000, Math.random()*3000);
+    for(let i=0; i<50; i++) spawn('stone', Math.random()*3000, Math.random()*3000);
+    for(let i=0; i<30; i++) spawn('scrap', Math.random()*3000, Math.random()*3000);
+}
+
+function spawn(type, x, y) {
+    objects.push({ type, x, y, hp: 5, id: Math.random(), ready: false, timer: 0 });
+}
+
+// --- CRAFTING LOGIK ---
+function craft(item) {
+    if(item === 'pickaxe' && p.wood >= 10) { p.wood -= 10; p.hasPick = true; document.getElementById('btn-pick').disabled = true; }
+    if(item === 'smith' && p.wood >= 10 && p.stone >= 5) { p.wood -= 10; p.stone -= 5; p.hasSmith = true; document.getElementById('smith-ui').style.display = 'block'; }
+    if(item === 'drill' && p.stone >= 10 && p.screw >= 5 && p.batt >= 2) {
+        p.stone -= 10; p.screw -= 5; p.batt -= 2;
+        spawn('drill', p.x, p.y);
+    }
+    if(item === 'farm' && p.wood >= 5) {
+        p.wood -= 5;
+        spawn('farm', p.x, p.y);
+    }
+    if(item === 'barrel' && p.iron >= 15) { p.iron -= 15; p.barrel++; }
+    if(item === 'mag' && p.iron >= 10) { p.iron -= 10; p.mag++; }
+    if(item === 'ak47' && p.barrel >= 1 && p.mag >= 1) { p.barrel--; p.mag--; p.ammo += 100; alert("AK-47 BYGGD!"); }
+    updateUI();
+}
+
+// --- INPUT ---
+window.onkeydown = e => keys[e.key.toLowerCase()] = true;
+window.onkeyup = e => keys[e.key.toLowerCase()] = false;
+window.onmousedown = () => {
+    if(p.ammo > 0) {
+        p.ammo--;
+        let a = Math.atan2(mouseY - canvas.height/2, mouseX - canvas.width/2);
+        bullets.push({ x: p.x, y: p.y, a: a, s: 12, l: 60 });
+        updateUI();
+    }
+}
+let mouseX = 0, mouseY = 0;
+window.onmousemove = e => { mouseX = e.clientX; mouseY = e.clientY; };
+
+// --- CORE GAME LOOP ---
+function update() {
+    // Flytt
+    if(keys.w) p.y -= 4; if(keys.s) p.y += 4;
+    if(keys.a) p.x -= 4; if(keys.d) p.x += 4;
+
+    // Hunger
+    p.food -= 0.005;
+    if(p.food <= 0) { p.food = 0; p.hp -= 0.02; }
+
+    // Objekt-logik
+    objects.forEach((obj, i) => {
+        let dist = Math.hypot(p.x - obj.x, p.y - obj.y);
+
+        // Hugga träd (Gå nära)
+        if(dist < 50 && keys[' ']) { // SPACE för att slå
+            if(obj.type === 'tree') { obj.hp -= 0.05; if(obj.hp <= 0) { p.wood += 5; objects.splice(i, 1); updateUI(); } }
+            if(obj.type === 'stone' && p.hasPick) { obj.hp -= 0.05; if(obj.hp <= 0) { p.stone += 5; objects.splice(i, 1); updateUI(); } }
+            if(obj.type === 'scrap') { p.screw += 2; p.batt += 1; objects.splice(i, 1); updateUI(); }
+            if(obj.type === 'farm' && obj.ready) { p.food = Math.min(100, p.food + 30); objects.splice(i, 1); updateUI(); }
+        }
+
+        // Automatisk Borr (Gruva)
+        if(obj.type === 'drill') {
+            obj.timer++;
+            if(obj.timer > 180) { // Var 3:e sekund
+                p.iron += 2;
+                obj.timer = 0;
+                updateUI();
+            }
+        }
+
+        // Odling
+        if(obj.type === 'farm' && !obj.ready) {
+            obj.timer++;
+            if(obj.timer > 600) obj.ready = true;
+        }
+    });
+
+    // Kulor
+    bullets.forEach((b, i) => {
+        b.x += Math.cos(b.a)*b.s; b.y += Math.sin(b.a)*b.s; b.l--;
+        if(b.l <= 0) bullets.splice(i, 1);
+    });
+}
+
+function draw() {
+    ctx.fillStyle = '#222'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    
+    ctx.save();
+    ctx.translate(canvas.width/2 - p.x, canvas.height/2 - p.y);
+
+    // Rita Värld
+    objects.forEach(obj => {
+        if(obj.type === 'tree') ctx.fillStyle = '#2d5a27';
+        else if(obj.type === 'stone') ctx.fillStyle = '#666';
+        else if(obj.type === 'scrap') ctx.fillStyle = '#f0f';
+        else if(obj.type === 'drill') ctx.fillStyle = 'yellow';
+        else if(obj.type === 'farm') ctx.fillStyle = obj.ready ? 'orange' : '#543';
+        
+        ctx.fillRect(obj.x-20, obj.y-20, 40, 40);
+        if(obj.type === 'drill') ctx.strokeRect(obj.x-25, obj.y-25, 50, 50);
+    });
+
+    // Kulor
+    ctx.fillStyle = 'white';
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 4));
+
+    // Spelare
+    ctx.fillStyle = '#0f0';
+    ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, 7); ctx.fill();
+
+    ctx.restore();
+    update();
+    requestAnimationFrame(draw);
+}
+
+function updateUI() {
+    document.getElementById('hp').innerText = Math.floor(p.hp);
+    document.getElementById('food').innerText = Math.floor(p.food);
+    document.getElementById('res-wood').innerText = Math.floor(p.wood);
+    document.getElementById('res-stone').innerText = Math.floor(p.stone);
+    document.getElementById('res-iron').innerText = Math.floor(p.iron);
+    document.getElementById('res-screw').innerText = p.screw;
+    document.getElementById('res-batt').innerText = p.batt;
+    document.getElementById('res-ammo').innerText = p.ammo;
+}
+
+spawnInitial();
+draw();
+</script>
+</body>
+</html>
