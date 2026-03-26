@@ -2,75 +2,72 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <title>Z-Survival: Auto-Industrial</title>
+    <title>Z-Survival: Military & Industry</title>
     <style>
-        :root { --neon: #00ff41; --danger: #ff3131; --bg: #0a0a0b; }
-        body { margin: 0; background: var(--bg); color: var(--neon); font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        body { margin: 0; background: #050505; color: #0f0; font-family: monospace; overflow: hidden; }
         canvas { display: block; }
-
-        /* Inventory Panel - Snyggare design */
-        #inventory-hud {
-            position: absolute; right: 20px; top: 20px;
-            background: rgba(10, 10, 15, 0.9);
-            border: 2px solid var(--neon);
-            padding: 20px; border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
-            min-width: 180px;
-        }
-        .inv-item { display: flex; justify-content: space-between; margin: 8px 0; font-weight: bold; font-family: monospace; }
         
-        /* Progress System */
-        #goal-tracker {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); padding: 10px 30px; border-radius: 50px;
-            border: 1px solid #444; color: #aaa;
-        }
+        /* UI Paneler */
+        .panel { position: absolute; background: rgba(0,20,0,0.9); border: 1px solid #0f0; padding: 10px; border-radius: 5px; }
+        #stats { top: 10px; left: 10px; width: 200px; }
+        #inventory { top: 10px; right: 10px; width: 220px; font-size: 12px; }
+        #craft-menu { bottom: 80px; left: 50%; transform: translateX(-50%); width: 600px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        
+        button { background: #030; color: #0f0; border: 1px solid #0f0; cursor: pointer; padding: 5px; font-size: 11px; }
+        button:hover { background: #0f0; color: #000; }
+        button:disabled { color: #222; border-color: #222; }
 
-        /* Hotbar */
-        #hotbar {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 12px; padding: 10px; background: rgba(0,0,0,0.8);
-            border-radius: 20px; border: 1px solid #333;
-        }
-        .slot {
-            width: 55px; height: 55px; border: 2px solid #333; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center; font-size: 24px;
-            transition: 0.3s; background: #111; position: relative;
-        }
-        .slot.active { border-color: var(--neon); box-shadow: 0 0 15px var(--neon); transform: translateY(-10px); }
-        .slot::before { content: attr(data-n); position: absolute; bottom: -18px; font-size: 10px; color: #666; }
-
-        /* Notifications */
-        #notif {
-            position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
-            color: yellow; font-weight: bold; text-shadow: 0 0 10px black; opacity: 0; transition: 0.5s;
-        }
+        #hotbar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; }
+        .slot { width: 45px; height: 45px; border: 1px solid #444; display: flex; align-items: center; justify-content: center; background: #111; }
+        .slot.active { border-color: #0f0; box-shadow: 0 0 10px #0f0; }
     </style>
 </head>
 <body>
 
-<div id="goal-tracker">MÅL: Samla 10 Wood för Crafting Table</div>
-
-<div id="inventory-hud">
-    <div style="color:var(--danger); font-size: 1.2em; margin-bottom: 15px;">STATS</div>
-    <div class="inv-item"><span>❤️ HP</span> <span id="hp">100</span></div>
-    <div class="inv-item"><span>🍖 FOOD</span> <span id="food">100</span></div>
-    <hr style="border: 0.5px solid #222">
-    <div class="inv-item"><span>🪵 WOOD</span> <span id="v-wood">0</span></div>
-    <div class="inv-item"><span>🪨 STONE</span> <span id="v-stone">0</span></div>
-    <div class="inv-item"><span>⛓️ IRON</span> <span id="v-iron">0</span></div>
-    <div class="inv-item"><span>⚙️ GEARS</span> <span id="v-screw">0</span></div>
-    <div class="inv-item" id="ammo-ui"><span>🔫 AMMO</span> <span id="v-ammo">10</span></div>
+<div id="stats" class="panel">
+    <div style="color:red">❤️ HP: <span id="hp">100</span></div>
+    <div style="color:orange">🍗 MAT: <span id="food">100</span></div>
+    <hr>
+    <div>🛠️ MODE: <span id="mode-text">HAND</span></div>
 </div>
 
-<div id="notif">CRAFTING TABLE SKAPAT! + Nya recept upplåsta</div>
+<div id="inventory" class="panel">
+    <b>RESERVOAR</b><br>
+    🪵 Wood: <span id="v-wood">0</span> | 🪨 Stone: <span id="v-stone">0</span><br>
+    ⛓️ Iron: <span id="v-iron">0</span> | ⚙️ Parts: <span id="v-parts">0</span><br>
+    🌱 Seeds: <span id="v-seeds">0</span> | 🔫 Ammo: <span id="v-ammo">10</span>
+    <hr>
+    <b>DELAR</b><br>
+    Pipa: <span id="v-barrel">0</span> | Mag: <span id="v-mag">0</span> | Muzzle: <span id="v-muzzle">0</span>
+</div>
+
+<div id="craft-menu" class="panel">
+    <div>
+        <b>BAS-VERKTYG</b>
+        <button onclick="craft('shovel')">Spade (5 Wood)</button>
+        <button onclick="craft('pickaxe')">Pickaxe (10 Wood)</button>
+    </div>
+    <div>
+        <b>VAPEN-DELAR (Smed)</b>
+        <button onclick="craft('barrel')">Smid Pipa (10 Iron)</button>
+        <button onclick="craft('mag')">Smid Magasin (5 Iron)</button>
+        <button onclick="craft('muzzle')">Smid Muzzle (5 Iron)</button>
+        <button onclick="craft('machinegun')">MONTERA KULSPRUTA</button>
+    </div>
+    <div>
+        <b>FORDON & TEKNIK</b>
+        <button onclick="craft('car')">Bygg Bil (50 Iron, 10 Parts)</button>
+        <button onclick="craft('plane')">Flygplan (100 Iron, 20 Parts)</button>
+        <button onclick="craft('radar')">Radar (20 Iron, 5 Parts)</button>
+    </div>
+</div>
 
 <div id="hotbar">
-    <div class="slot active" id="s1" data-n="1">✋</div>
-    <div class="slot" id="s2" data-n="2">⛏️</div>
-    <div class="slot" id="s3" data-n="3">🔫</div>
-    <div class="slot" id="s4" data-n="4">🏭</div>
-    <div class="slot" id="s5" data-n="5">🚜</div>
+    <div class="slot active" id="s1">1✋</div>
+    <div class="slot" id="s2">2⛏️</div>
+    <div class="slot" id="s3">3🥄</div>
+    <div class="slot" id="s4">4🔫</div>
+    <div class="slot" id="s5">5🏎️</div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -80,152 +77,134 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-// --- GAME STATE ---
-let p = { x: 2000, y: 2000, hp: 100, food: 100, wood: 0, stone: 0, iron: 0, screw: 0, ammo: 10 };
-let inv = { slot: 1, hasPick: false, hasSmith: false };
+// --- SPEL-DATA ---
+let p = { x: 0, y: 0, hp: 100, food: 100, wood: 0, stone: 0, iron: 0, parts: 0, seeds: 5, ammo: 10, slot: 1 };
+let inv = { shovel: false, pickaxe: false, barrel: 0, mag: 0, muzzle: 0, car: false, plane: false, mg: false };
 let world = [];
 let bullets = [];
-let particles = [];
 let keys = {};
-let mouse = { x: 0, y: 0 };
 
 function init() {
-    for(let i=0; i<100; i++) spawn('tree', Math.random()*4000, Math.random()*4000);
-    for(let i=0; i<60; i++) spawn('stone', Math.random()*4000, Math.random()*4000);
-    for(let i=0; i<40; i++) spawn('scrap', Math.random()*4000, Math.random()*4000);
+    for(let i=0; i<50; i++) spawn('tree', (Math.random()-0.5)*3000, (Math.random()-0.5)*3000);
+    for(let i=0; i<40; i++) spawn('stone', (Math.random()-0.5)*3000, (Math.random()-0.5)*3000);
+    for(let i=0; i<30; i++) spawn('scrap', (Math.random()-0.5)*3000, (Math.random()-0.5)*3000);
 }
 
 function spawn(type, x, y) {
-    world.push({ type, x, y, hp: 100, scale: 1, shake: 0, id: Math.random(), timer: 0 });
+    world.push({ type, x, y, hp: 10, timer: 0, ready: false });
 }
 
-// --- LOGIC ---
+// --- CRAFTING SYSTEM ---
+function craft(item) {
+    if(item === 'shovel' && p.wood >= 5) { p.wood -= 5; inv.shovel = true; }
+    if(item === 'pickaxe' && p.wood >= 10) { p.wood -= 10; inv.pickaxe = true; }
+    if(item === 'barrel' && p.iron >= 10) { p.iron -= 10; inv.barrel++; }
+    if(item === 'mag' && p.iron >= 5) { p.iron -= 5; inv.mag++; }
+    if(item === 'muzzle' && p.iron >= 5) { p.iron -= 5; inv.muzzle++; }
+    
+    if(item === 'machinegun' && inv.barrel >= 1 && inv.mag >= 1 && inv.muzzle >= 1) {
+        inv.barrel--; inv.mag--; inv.muzzle--; inv.mg = true; p.ammo += 50;
+    }
+
+    if(item === 'car' && p.iron >= 50 && p.parts >= 10) { p.iron -= 50; p.parts -= 10; inv.car = true; }
+    
+    updateUI();
+}
+
+// --- KONTROLLER ---
 window.onkeydown = e => {
     keys[e.key.toLowerCase()] = true;
     if(['1','2','3','4','5'].includes(e.key)) {
-        inv.slot = parseInt(e.key);
+        p.slot = parseInt(e.key);
         document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
         document.getElementById('s' + e.key).classList.add('active');
+        const modes = ["HAND", "PICKAXE", "SHOVEL", "WEAPON", "VEHICLE"];
+        document.getElementById('mode-text').innerText = modes[p.slot-1];
     }
 };
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
-window.onmousemove = e => { mouse.x = e.clientX; mouse.y = e.clientY; };
 
 window.onmousedown = () => {
-    if(inv.slot === 3 && p.ammo > 0) {
+    // Skjut (Slot 4)
+    if(p.slot === 4 && p.ammo > 0) {
         p.ammo--;
-        let a = Math.atan2(mouse.y - canvas.height/2, mouse.x - canvas.width/2);
-        bullets.push({ x: p.x, y: p.y, a, s: 15, l: 50 });
+        let a = Math.atan2(mouseY - canvas.height/2, mouseX - canvas.width/2);
+        bullets.push({ x: p.x, y: p.y, a });
     }
-    // Place Drill or Farm
-    if(inv.slot === 4 && p.stone >= 10 && p.screw >= 3) { p.stone -= 10; p.screw -= 3; spawn('drill', p.x, p.y); }
-    if(inv.slot === 5 && p.wood >= 5) { p.wood -= 5; spawn('farm', p.x, p.y); }
+    // Plantera (Slot 3 - Spade)
+    if(p.slot === 3 && inv.shovel && p.seeds > 0) {
+        p.seeds--;
+        spawn('farm', p.x, p.y);
+    }
 };
 
+let mouseX = 0, mouseY = 0;
+window.onmousemove = e => { mouseX = e.clientX; mouseY = e.clientY; };
+
+// --- LOOP ---
 function update() {
-    // Player Movement
-    let speed = 5;
+    let speed = inv.car && p.slot === 5 ? 12 : 5; // Bilen går snabbare!
     if(keys.w) p.y -= speed; if(keys.s) p.y += speed;
     if(keys.a) p.x -= speed; if(keys.d) p.x += speed;
 
-    p.food -= 0.003;
-    if(p.food <= 0) { p.food = 0; p.hp -= 0.05; }
-
-    // Auto-Crafting Check
-    if(!inv.hasSmith && p.wood >= 10) {
-        inv.hasSmith = true;
-        document.getElementById('notif').style.opacity = 1;
-        document.getElementById('goal-tracker').innerText = "MÅL: Samla Sten & Skruv för Borrmaskin";
-    }
+    p.food -= 0.005;
 
     world.forEach((obj, i) => {
         let d = Math.hypot(p.x - obj.x, p.y - obj.y);
-        
-        // Interaction (SPACE)
-        if(d < 70 && keys[' ']) {
-            obj.shake = 15;
-            if(obj.type === 'tree' && inv.slot === 1) { 
-                obj.hp -= 2; if(obj.hp <= 0) { p.wood += 5; world.splice(i, 1); }
-            }
-            if(obj.type === 'stone' && inv.slot === 2) { 
-                obj.hp -= 2; if(obj.hp <= 0) { p.stone += 5; world.splice(i, 1); }
-            }
-            if(obj.type === 'scrap') { p.screw += 1; world.splice(i, 1); }
-            if(obj.type === 'farm' && obj.timer > 600) { p.food = 100; world.splice(i, 1); }
+        if(d < 60 && keys[' ']) {
+            if(obj.type === 'tree' && p.slot === 1) { obj.hp -= 0.2; if(obj.hp<=0){p.wood+=5; world.splice(i,1);} }
+            if(obj.type === 'stone' && p.slot === 2 && inv.pickaxe) { obj.hp -= 0.2; if(obj.hp<=0){p.stone+=5; world.splice(i,1);} }
+            if(obj.type === 'scrap') { p.parts += 2; p.iron += 5; world.splice(i,1); }
+            if(obj.type === 'farm' && obj.ready) { p.food = 100; p.seeds += 2; world.splice(i,1); }
         }
-
-        if(obj.type === 'drill') {
-            obj.timer++; if(obj.timer % 120 === 0) p.iron++;
+        if(obj.type === 'farm') {
+            obj.timer++; if(obj.timer > 500) obj.ready = true;
         }
-        if(obj.type === 'farm') obj.timer++;
-        if(obj.shake > 0) obj.shake *= 0.8;
     });
 
-    bullets.forEach((b, i) => {
-        b.x += Math.cos(b.a)*b.s; b.y += Math.sin(b.a)*b.s; b.l--;
-        if(b.l <= 0) bullets.splice(i, 1);
-    });
-    
-    updateHUD();
+    bullets.forEach((b, i) => { b.x += Math.cos(b.a)*20; b.y += Math.sin(b.a)*20; });
+    updateUI();
 }
 
-function updateHUD() {
+function updateUI() {
     document.getElementById('hp').innerText = Math.floor(p.hp);
     document.getElementById('food').innerText = Math.floor(p.food);
     document.getElementById('v-wood').innerText = p.wood;
     document.getElementById('v-stone').innerText = p.stone;
     document.getElementById('v-iron').innerText = p.iron;
-    document.getElementById('v-screw').innerText = p.screw;
+    document.getElementById('v-parts').innerText = p.parts;
+    document.getElementById('v-seeds').innerText = p.seeds;
     document.getElementById('v-ammo').innerText = p.ammo;
+    document.getElementById('v-barrel').innerText = inv.barrel;
+    document.getElementById('v-mag').innerText = inv.mag;
+    document.getElementById('v-muzzle').innerText = inv.muzzle;
 }
 
 function draw() {
-    ctx.fillStyle = '#050508'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.save();
     ctx.translate(canvas.width/2 - p.x, canvas.height/2 - p.y);
 
     world.forEach(obj => {
-        ctx.save();
-        ctx.translate(obj.x + Math.sin(Date.now()*0.1)*obj.shake*0.2, obj.y);
-        
-        // Modeller
-        if(obj.type === 'tree') {
-            ctx.fillStyle = '#143314'; ctx.fillRect(-10, -10, 20, 40); // Stam
-            ctx.fillStyle = '#228B22'; ctx.beginPath(); ctx.arc(0, -20, 25, 0, 7); ctx.fill(); // Löv
-        } else if(obj.type === 'stone') {
-            ctx.fillStyle = '#444'; ctx.beginPath(); ctx.moveTo(-20,10); ctx.lineTo(0,-20); ctx.lineTo(25,15); ctx.fill();
-        } else if(obj.type === 'drill') {
-            ctx.fillStyle = '#f1c40f'; ctx.fillRect(-25,-25,50,50);
-            ctx.strokeStyle = '#fff'; ctx.strokeRect(-28,-28,56,56);
-        } else if(obj.type === 'farm') {
-            ctx.fillStyle = obj.timer > 600 ? '#e1ad01' : '#3b2f2f'; ctx.fillRect(-30,-30,60,60);
-        } else if(obj.type === 'scrap') {
-            ctx.fillStyle = '#ff3131'; ctx.font = "20px Arial"; ctx.fillText("⚙️", -10, 10);
-        }
-        ctx.restore();
+        if(obj.type === 'tree') ctx.fillStyle = 'green';
+        else if(obj.type === 'stone') ctx.fillStyle = '#555';
+        else if(obj.type === 'scrap') ctx.fillStyle = 'blue';
+        else if(obj.type === 'farm') ctx.fillStyle = obj.ready ? 'yellow' : 'brown';
+        ctx.fillRect(obj.x-15, obj.y-15, 30, 30);
     });
 
-    // Bullets & Player
-    ctx.fillStyle = 'white'; bullets.forEach(b => ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, 7); ctx.fill());
-    
-    // Player Model
-    ctx.shadowBlur = 15; ctx.shadowColor = '#00ff41';
-    ctx.fillStyle = '#00ff41'; ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, 7); ctx.fill();
-    ctx.shadowBlur = 0;
+    // Rita Spelare / Bil
+    ctx.fillStyle = (inv.car && p.slot === 5) ? 'red' : '#0f0';
+    if(inv.car && p.slot === 5) ctx.fillRect(p.x-25, p.y-15, 50, 30);
+    else { ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, 7); ctx.fill(); }
 
-    // Crosshair
-    let ang = Math.atan2(mouse.y - canvas.height/2, mouse.x - canvas.width/2);
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(p.x + Math.cos(ang)*25, p.y + Math.sin(ang)*25);
-    ctx.lineTo(p.x + Math.cos(ang)*45, p.y + Math.sin(ang)*45); ctx.stroke();
-
+    ctx.fillStyle = 'white'; bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 4));
     ctx.restore();
     update();
     requestAnimationFrame(draw);
 }
 
-init();
-draw();
+init(); draw();
 </script>
 </body>
 </html>
